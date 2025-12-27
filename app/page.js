@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Upload, Printer, FileDown, Loader2, Wand2 } from 'lucide-react';
 import Link from 'next/link';
@@ -11,9 +11,37 @@ export default function Home() {
     const [isDragOver, setIsDragOver] = useState(false);
     const [selectedTemplateName, setSelectedTemplateName] = useState('Light'); // Default to Light
     const [isGreyscale, setIsGreyscale] = useState(false);
+    const [scale, setScale] = useState(1);
+    const gridRef = useRef(null);
 
     // React Component of the selected template
     const SelectedTemplate = templates[selectedTemplateName] || templates['Light'];
+
+    // Dynamic Scale Calculation
+    useEffect(() => {
+        const calculateScale = () => {
+            if (gridRef.current) {
+                const containerWidth = gridRef.current.offsetWidth;
+                const windowWidth = window.innerWidth;
+                let cols = 1;
+                if (windowWidth >= 1024) cols = 3; // lg
+                else if (windowWidth >= 768) cols = 2; // md
+
+                const gap = 32; // gap-8 is 2rem = 32px
+                const totalGap = (cols - 1) * gap;
+                const availableWidth = containerWidth - totalGap;
+                const colWidth = availableWidth / cols;
+
+                // 816px is 8.5in at 96dpi
+                const newScale = Math.min(colWidth / 816, 1);
+                setScale(newScale > 0 ? newScale : 1);
+            }
+        };
+
+        calculateScale();
+        window.addEventListener('resize', calculateScale);
+        return () => window.removeEventListener('resize', calculateScale);
+    }, [items.length]);
 
     const handleFileUpload = (e) => {
         const file = e.target.files?.[0];
@@ -213,15 +241,32 @@ export default function Home() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:block print:gap-0">
+                    <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:block print:gap-0">
                         {items.map((item, index) => (
-                            <div key={index} className="print:break-after-page print:h-screen print:w-full print:flex print:items-center print:justify-center">
+                            <div key={index} className="print:break-after-page print:h-screen print:w-full print:flex print:items-center print:justify-center overflow-hidden">
                                 <div
-                                    className="scale-[0.6] sm:scale-[0.8] md:scale-100 origin-top-left md:origin-center print:scale-100 print:origin-top-left item-preview-wrapper"
-                                    style={{ filter: isGreyscale ? 'grayscale(100%)' : 'none' }}
+                                    className="item-preview-container print:h-auto print:w-full"
+                                    style={{
+                                        // 1056px is height of 11in at 96dpi
+                                        height: `${1056 * scale}px`,
+                                        width: '100%',
+                                        position: 'relative'
+                                    }}
                                 >
-                                    {/* Render the selected dynamic component */}
-                                    <SelectedTemplate data={item} />
+                                    <div
+                                        className="item-preview-wrapper print:scale-100 print:origin-top-left print:transform-none"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            transform: `scale(${scale})`,
+                                            transformOrigin: 'top left',
+                                            filter: isGreyscale ? 'grayscale(100%)' : 'none'
+                                        }}
+                                    >
+                                        {/* Render the selected dynamic component */}
+                                        <SelectedTemplate data={item} />
+                                    </div>
                                 </div>
                             </div>
                         ))}
