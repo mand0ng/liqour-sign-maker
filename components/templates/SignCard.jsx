@@ -1,5 +1,7 @@
 import React from 'react';
 
+SignCard.size = "8.5x11";
+
 export default function SignCard({ data }) {
     // data expected: { name, price, size, promo, storeName, storeNum, storeAddress, message1Status, message1Content, message2Status, message2Content }
     const isPromo = data.promo && data.promo.toString().toLowerCase() !== "no";
@@ -7,7 +9,7 @@ export default function SignCard({ data }) {
     const showMessage2 = data.message2Status && data.message2Status.toString().toLowerCase() === "yes";
 
     return (
-        <div className="w-[8.5in] h-[11in] bg-white text-black relative flex flex-col items-center justify-between p-12 border border-gray-200 shadow-sm print:shadow-none print:border-none mx-auto overflow-hidden">
+        <div className="w-full h-full bg-white text-black relative flex flex-col items-center justify-between p-12 border border-gray-200 shadow-sm print:shadow-none print:border-none mx-auto overflow-hidden">
 
             {/* Message 1 (Top) */}
             {showMessage1 && (

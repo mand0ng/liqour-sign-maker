@@ -8,6 +8,9 @@ export async function POST(req) {
         const safeName = name.replace(/[^a-zA-Z0-9]/g, '');
         const fileName = `${safeName}.jsx`;
 
+        // Ensure identifier starts with a letter (for imports)
+        const varName = /^[0-9]/.test(safeName) ? `T${safeName}` : safeName;
+
         // 1. Write the component file
         const templatesDir = join(process.cwd(), 'components', 'templates');
         await writeFile(join(templatesDir, fileName), code);
@@ -17,21 +20,19 @@ export async function POST(req) {
         let indexContent = await readFile(indexFile, 'utf8');
 
         // Add import
-        if (!indexContent.includes(`import ${safeName}`)) {
-            const importStatement = `import ${safeName} from './${safeName}';\n`;
+        if (!indexContent.includes(`import ${varName}`)) {
+            const importStatement = `import ${varName} from './${safeName}';\n`;
             indexContent = importStatement + indexContent;
         }
 
         // Add to export list
-        // This simple regex replacement assumes the structure created earlier.
-        // Ideally we would parse the AST but regex is faster for this hack.
         const exportPattern = /export const templates = {([\s\S]*?)};/;
         const match = indexContent.match(exportPattern);
 
         if (match) {
             const currentExports = match[1];
             if (!currentExports.includes(`'${safeName}':`)) {
-                const newExports = currentExports.trimEnd() + `\n  '${safeName}': ${safeName},\n`;
+                const newExports = currentExports.trimEnd() + `\n  '${safeName}': ${varName},\n`;
                 indexContent = indexContent.replace(exportPattern, `export const templates = {${newExports}};`);
             }
         }

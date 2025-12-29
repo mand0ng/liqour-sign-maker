@@ -1,6 +1,8 @@
 
 import React from 'react';
 
+CustomSign.size = "8.5x11";
+
 function CustomSign({ data }) {
   const {
     name = 'PRODUCT NAME',
@@ -20,7 +22,7 @@ function CustomSign({ data }) {
   const showMessage2 = message2Status && message2Status.toString().toLowerCase() === 'yes';
 
   return (
-    <div className="bg-white p-6 shadow-lg max-w-sm mx-auto my-4 rounded-lg border border-gray-300 relative overflow-hidden" style={{ width: '816px', height: '1056px' }}>
+    <div className="relative overflow-hidden p-6 mx-auto w-full h-full flex flex-col">
 
       {/* Message 1 (Top) */}
       {showMessage1 && (

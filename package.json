@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "generate": "node scripts/generate-templates.mjs",
+    "dev": "npm run generate && next dev",
+    "build": "npm run generate && next build",
+    "start": "npm run generate && next start",
     "lint": "eslint"
   },
   "dependencies": {

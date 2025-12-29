@@ -1,9 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, Printer, FileDown, Loader2, Wand2 } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { templates } from '@/components/templates';
+import { exampleData } from './exampleData';
+import ControlPanel from '@/components/ControlPanel';
+import EmptyState from '@/components/EmptyState';
+import PagePreview from '@/components/PagePreview';
 
 export default function Home() {
     const [items, setItems] = useState([]);
@@ -17,24 +20,28 @@ export default function Home() {
     // React Component of the selected template
     const SelectedTemplate = templates[selectedTemplateName] || templates['Light'];
 
-    // Dynamic Scale Calculation
+    // Dynamic Scale Calculation for WYSIWYG Preview
     useEffect(() => {
         const calculateScale = () => {
             if (gridRef.current) {
                 const containerWidth = gridRef.current.offsetWidth;
-                const windowWidth = window.innerWidth;
-                let cols = 1;
-                if (windowWidth >= 1024) cols = 3; // lg
-                else if (windowWidth >= 768) cols = 2; // md
+                // 816px = 8.5in at 96dpi.
+                // We want to fit pages.
+                // Mobile: 1 page wide. Scale = containerWidth / 816
+                // Desktop: 2 pages wide? or just comfortable max width.
 
-                const gap = 32; // gap-8 is 2rem = 32px
-                const totalGap = (cols - 1) * gap;
-                const availableWidth = containerWidth - totalGap;
-                const colWidth = availableWidth / cols;
+                let targetCols = 1;
+                if (window.innerWidth >= 1200) targetCols = 2; // Side by side on large screens
+                if (window.innerWidth >= 1800) targetCols = 3;
 
-                // 816px is 8.5in at 96dpi
-                const newScale = Math.min(colWidth / 816, 1);
-                setScale(newScale > 0 ? newScale : 1);
+                const gap = 32;
+                const availableWidthPerPage = (containerWidth - ((targetCols - 1) * gap)) / targetCols;
+
+                let newScale = availableWidthPerPage / 816;
+                // Cap scale at 1 to prevent huge zoomed in signs
+                newScale = Math.min(newScale, 1.2);
+
+                setScale(newScale);
             }
         };
 
@@ -103,34 +110,7 @@ export default function Home() {
     };
 
     const downloadTemplate = () => {
-        const ws = XLSX.utils.json_to_sheet([
-            {
-                Name: "Jameson Irish Whiskey",
-                Size: "750ml",
-                Price: 29.99,
-                Promo: "Yes",
-                "Message1 Status": "Yes",
-                "Message1 Contents": "Best Seller",
-                "Message2 Status": "No",
-                "Message2 Contents": "",
-                StoreName: "Pedro's Spirits",
-                StoreNum: "101",
-                StoreAddress: "123 Ocean Drive, Miami FL"
-            },
-            {
-                Name: "Grey Goose Vodka",
-                Size: "1L",
-                Price: 45.00,
-                Promo: "No",
-                "Message1 Status": "No",
-                "Message1 Contents": "",
-                "Message2 Status": "Yes",
-                "Message2 Contents": "Manager's Pick",
-                StoreName: "Pedro's Spirits",
-                StoreNum: "101",
-                StoreAddress: "123 Ocean Drive, Miami FL"
-            },
-        ]);
+        const ws = XLSX.utils.json_to_sheet(exampleData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Template");
         XLSX.writeFile(wb, "sign_template_v2.xlsx");
@@ -139,140 +119,33 @@ export default function Home() {
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900 pb-20">
 
-            {/* Control Panel */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-50 print:hidden shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
-
-                    <div className="flex items-center gap-3">
-                        <div className="bg-black text-white p-2 rounded-lg">
-                            <Printer size={24} />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold leading-none">Liquor SignGen</h1>
-                            <p className="text-xs text-gray-500">Automated Signage System</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 flex-wrap">
-
-                        {/* Grayscale Toggle */}
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg select-none">
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black"
-                                    checked={isGreyscale}
-                                    onChange={(e) => setIsGreyscale(e.target.checked)}
-                                />
-                                Inksaver (B&W)
-                            </label>
-                        </div>
-
-                        {/* Template Selector */}
-                        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                            <select
-                                className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer py-1.5 pl-3 pr-8 min-w-[140px]"
-                                value={selectedTemplateName}
-                                onChange={(e) => setSelectedTemplateName(e.target.value)}
-                            >
-                                {Object.keys(templates).map(name => (
-                                    <option key={name} value={name}>{name} Theme</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <Link
-                            href="/generate"
-                            className="text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 hover:bg-purple-100 transition-colors"
-                        >
-                            <Wand2 size={16} /> New AI Template
-                        </Link>
-
-
-                        {items.length > 0 && (
-                            <button
-                                onClick={() => window.print()}
-                                className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 shadow-sm"
-                            >
-                                <Printer size={18} />
-                                Print All
-                            </button>
-                        )}
-
-                        <button
-                            onClick={downloadTemplate}
-                            className="text-gray-600 hover:text-black text-sm font-medium flex items-center gap-1.5"
-                        >
-                            <FileDown size={16} />
-                            XLSX
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <ControlPanel
+                isGreyscale={isGreyscale}
+                setIsGreyscale={setIsGreyscale}
+                selectedTemplateName={selectedTemplateName}
+                setSelectedTemplateName={setSelectedTemplateName}
+                itemsLength={items.length}
+                downloadTemplate={downloadTemplate}
+            />
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0 print:max-w-none print:w-full print:mx-0">
-
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0 print:max-w-none print:w-full print:mx-0 print:bg-transparent">
                 {items.length === 0 ? (
-                    <div
-                        className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-200 ease-in-out bg-white ${isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-                        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                        onDragLeave={() => setIsDragOver(false)}
-                        onDrop={handleDrop}
-                    >
-                        <div className="flex flex-col items-center justify-center max-w-md mx-auto py-12">
-                            <div className="bg-gray-100 p-4 rounded-full mb-6 text-gray-500">
-                                <Upload size={48} />
-                            </div>
-                            <h3 className="text-2xl font-bold mb-2">Upload your Excel file</h3>
-                            <p className="text-gray-500 mb-8">Drag and drop your spreadsheet here, or click to browse</p>
-
-                            <label className="bg-black text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-transform active:scale-95 cursor-pointer shadow-lg mb-6 relative z-10">
-                                Browse Files
-                                <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
-                            </label>
-
-                            <div className="flex items-center gap-2 text-sm text-gray-500 relative z-10">
-                                <span>Want a custom design?</span>
-                                <Link href="/generate" className="text-purple-600 font-bold hover:underline flex items-center gap-1">
-                                    <Wand2 size={14} /> Create AI Template
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                    <EmptyState
+                        isDragOver={isDragOver}
+                        setIsDragOver={setIsDragOver}
+                        handleDrop={handleDrop}
+                        handleFileUpload={handleFileUpload}
+                    />
                 ) : (
-                    <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:block print:gap-0">
-                        {items.map((item, index) => (
-                            <div key={index} className="print:break-after-page print:h-screen print:w-full print:flex print:items-center print:justify-center overflow-hidden">
-                                <div
-                                    className="item-preview-container print:h-auto print:w-full"
-                                    style={{
-                                        // 1056px is height of 11in at 96dpi
-                                        height: `${1056 * scale}px`,
-                                        width: '100%',
-                                        position: 'relative'
-                                    }}
-                                >
-                                    <div
-                                        className="item-preview-wrapper print:scale-100 print:origin-top-left print:transform-none"
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            transform: `scale(${scale})`,
-                                            transformOrigin: 'top left',
-                                            filter: isGreyscale ? 'grayscale(100%)' : 'none'
-                                        }}
-                                    >
-                                        {/* Render the selected dynamic component */}
-                                        <SelectedTemplate data={item} />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <PagePreview
+                        items={items}
+                        scale={scale}
+                        gridRef={gridRef}
+                        isGreyscale={isGreyscale}
+                        SelectedTemplate={SelectedTemplate}
+                    />
                 )}
-
             </div>
 
             {loading && (

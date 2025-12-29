@@ -37,4 +37,82 @@ body {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
+
+    /* Large: 1-up, Full Page */
+    .print-layout-large {
+        width: 8.5in !important;
+        height: 11in !important;
+        page-break-after: always !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .print-layout-large .item-preview-wrapper {
+        transform: none !important;
+        position: static !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* Medium: 2-up, Stacked */
+    .print-layout-medium {
+        width: 8.5in !important;
+        height: 5.5in !important;
+        /* Half page height */
+        page-break-inside: avoid !important;
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .print-layout-medium .item-preview-wrapper {
+        /* Scale 0.6 to fill space better? Or keep 0.5? User said Medium is buggy. 
+           If we strictly want 2-up, 0.5 is safe (5.5in height). 
+           We'll force scale(0.5) via CSS to be sure. */
+        transform: scale(0.5) !important;
+        transform-origin: center top !important;
+        /* Key for stacking */
+        position: static !important;
+        height: 11in !important;
+        /* Original Height */
+        width: 8.5in !important;
+        /* Original Width */
+        /* Since we scale 0.5, effective height is 5.5in. Matches container. */
+        margin-bottom: -5.5in !important;
+        /* Compensation for flow space since scale doesn't affect flow? */
+    }
+
+    /* Fix flow issue with transform scaling: logical space remains 11in. need wrapper to clip? */
+    /* Alternate strategy for Medium/Small: Wrapper clips. */
+
+    .print-layout-wrapper-fix {
+        width: 8.5in;
+        height: 11in;
+    }
+
+    /* Small: 4-up, Grid */
+    .print-layout-small {
+        width: 4.25in !important;
+        height: 5.5in !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
+        float: left !important;
+        /* Grid behavior */
+    }
+
+    .print-layout-small .item-preview-wrapper {
+        transform: scale(0.5) !important;
+        transform-origin: top left !important;
+        position: static !important;
+        height: 11in !important;
+        width: 8.5in !important;
+        margin-right: -4.25in !important;
+        /* Compensate width */
+        margin-bottom: -5.5in !important;
+        /* Compensate height */
+    }
 }

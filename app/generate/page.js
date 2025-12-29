@@ -9,6 +9,8 @@ export default function GeneratePage() {
     const [loading, setLoading] = useState(false);
     const [generatedCode, setGeneratedCode] = useState('');
     const [templateName, setTemplateName] = useState('');
+    const [targetWidth, setTargetWidth] = useState('');
+    const [targetHeight, setTargetHeight] = useState('');
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -31,7 +33,7 @@ export default function GeneratePage() {
             const res = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ apiKey, image })
+                body: JSON.stringify({ apiKey, image, width: targetWidth, height: targetHeight })
             });
             const data = await res.json();
             if (data.error) throw new Error(data.error);
@@ -98,6 +100,39 @@ export default function GeneratePage() {
                                 </div>
                             )}
                             <input type="file" className="absolute inset-0 opacity-0 cursor-pointer h-full w-full" onChange={handleImageUpload} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Width (in)</label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black outline-none"
+                                placeholder="e.g. 8.5"
+                                value={targetWidth}
+                                onChange={(e) => setTargetWidth(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Height (in)</label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black outline-none"
+                                placeholder="e.g. 11"
+                                value={targetHeight}
+                                onChange={(e) => setTargetHeight(e.target.value)}
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <button
+                                onClick={() => { setTargetWidth(''); setTargetHeight(''); }}
+                                className="text-xs text-gray-500 hover:text-black underline cursor-pointer"
+                            >
+                                Reset to 8.5x11
+                            </button>
                         </div>
                     </div>
 
